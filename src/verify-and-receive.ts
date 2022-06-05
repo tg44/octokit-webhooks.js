@@ -7,11 +7,11 @@ import {
   State,
 } from "./types";
 
-export async function verifyAndReceive(
+export async function verifyAndReceive<TAdd>(
   state: State & { secret: string },
   event:
     | EmitterWebhookEventWithStringPayloadAndSignature
-    | EmitterWebhookEventWithSignature
+    | EmitterWebhookEventWithSignature<TAdd>
 ): Promise<any> {
   // verify will validate that the secret is not undefined
   const matchesSignature = await verify(
@@ -31,6 +31,9 @@ export async function verifyAndReceive(
       Object.assign(error, { event, status: 400 })
     );
   }
+  const additionalData = (event as Record<string, unknown>).additionalData
+    ? ((event as Record<string, unknown>).additionalData as TAdd)
+    : undefined;
 
   return state.eventHandler.receive({
     id: event.id,
@@ -39,5 +42,6 @@ export async function verifyAndReceive(
       typeof event.payload === "string"
         ? JSON.parse(event.payload)
         : event.payload,
+    additionalData,
   });
 }

@@ -12,13 +12,13 @@ import { MiddlewareOptions } from "./types";
 import { getMissingHeaders } from "./get-missing-headers";
 import { getPayload } from "./get-payload";
 
-export async function middleware(
-  webhooks: Webhooks,
-  options: Required<MiddlewareOptions>,
+export const middleware = async <TTransform, TAdd>(
+  webhooks: Webhooks<TTransform, TAdd>,
+  options: Required<MiddlewareOptions<TAdd>>,
   request: IncomingMessage,
   response: ServerResponse,
   next?: Function
-) {
+): Promise<any> => {
   let pathname: string;
   try {
     pathname = new URL(request.url as string, "http://localhost").pathname;
@@ -34,7 +34,8 @@ export async function middleware(
     return;
   }
 
-  const isUnknownRoute = request.method !== "POST" || pathname !== options.path;
+  const isUnknownRoute =
+    request.method !== "POST" || !pathname.startsWith(options.path);
   const isExpressMiddleware = typeof next === "function";
   if (isUnknownRoute) {
     if (isExpressMiddleware) {
@@ -76,12 +77,16 @@ export async function middleware(
 
   try {
     const payload = await getPayload(request);
+    const additionalData = options.additionalDataExtractor
+      ? options.additionalDataExtractor(request)
+      : undefined;
 
     await webhooks.verifyAndReceive({
       id: id,
       name: eventName as any,
       payload: payload as any,
       signature: signatureSHA256,
+      additionalData,
     });
     clearTimeout(timeout);
 
@@ -97,4 +102,4 @@ export async function middleware(
     response.statusCode = typeof statusCode !== "undefined" ? statusCode : 500;
     response.end(String(error));
   }
-}
+};

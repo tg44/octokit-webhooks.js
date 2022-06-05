@@ -3,18 +3,29 @@ import { Webhooks } from "../../index";
 import { middleware } from "./middleware";
 import { onUnhandledRequestDefault } from "./on-unhandled-request-default";
 import { MiddlewareOptions } from "./types";
+import { IncomingMessage, ServerResponse } from "http";
 
-export function createNodeMiddleware(
-  webhooks: Webhooks,
+export function createNodeMiddleware<TTransformed, TAdd>(
+  webhooks: Webhooks<TTransformed, TAdd>,
   {
     path = "/api/github/webhooks",
     onUnhandledRequest = onUnhandledRequestDefault,
     log = createLogger(),
-  }: MiddlewareOptions = {}
+    additionalDataExtractor = undefined,
+  }: MiddlewareOptions<TAdd> = {}
 ) {
-  return middleware.bind(null, webhooks, {
+  const bindableMiddleware: (
+    webhooks: Webhooks<TTransformed, TAdd>,
+    options: Required<MiddlewareOptions<TAdd>>,
+    request: IncomingMessage,
+    response: ServerResponse,
+    next?: Function
+  ) => Promise<any> = middleware;
+
+  return bindableMiddleware.bind(null, webhooks, {
     path,
     onUnhandledRequest,
     log,
-  } as Required<MiddlewareOptions>);
+    additionalDataExtractor,
+  } as Required<MiddlewareOptions<TAdd>>);
 }

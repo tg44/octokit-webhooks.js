@@ -21,6 +21,18 @@ const config: Config.InitialOptions = {
   restoreMocks: true,
   testEnvironment: "node",
   testRegex: /test\/.*\/.*.test.ts/u.source,
+  /*transformIgnorePatterns: [
+    `/node_modules/(?!aggregate-error/.*)`,
+    `/node_modules/(?!indent-string/.*)`,
+    `/node_modules/(?!node-fetch/.*)`,
+    `/node_modules/(?!node-fetch/.*)`,
+  ],*/
+  transform: {
+    "^.+\\.(ts|tsx)$": "ts-jest",
+    "^.+\\.(js)$": "babel-jest",
+  },
+  transformIgnorePatterns: [
+  ],
 };
 
 export default config;

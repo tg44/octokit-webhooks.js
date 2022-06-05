@@ -49,9 +49,9 @@ export function receiverOn(
   handleEventHandlers(state, webhookNameOrNames, handler);
 }
 
-export function receiverOnAny(
+export function receiverOnAny<TAdd>(
   state: State,
-  handler: (event: EmitterWebhookEvent) => any
+  handler: (event: EmitterWebhookEvent<TAdd>) => any
 ) {
   handleEventHandlers(state, "*", handler);
 }

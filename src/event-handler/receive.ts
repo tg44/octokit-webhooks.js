@@ -29,7 +29,10 @@ function getHooks(
 }
 
 // main handler function
-export function receiverHandle(state: State, event: EmitterWebhookEvent) {
+export function receiverHandle<TAdd>(
+  state: State,
+  event: EmitterWebhookEvent<TAdd>
+) {
   const errorHandlers = state.hooks.error || [];
 
   if (event instanceof Error) {
@@ -82,11 +85,12 @@ export function receiverHandle(state: State, event: EmitterWebhookEvent) {
       return;
     }
 
-    const error = new AggregateError(errors) as WebhookEventHandlerError;
-    Object.assign(error, {
+    const aggregateError = new AggregateError(errors);
+    Object.assign(aggregateError, {
       event,
       errors,
     });
+    const error = aggregateError as unknown as WebhookEventHandlerError;
 
     errorHandlers.forEach((handler) => wrapErrorHandler(handler, error));
 

@@ -84,7 +84,7 @@ describe("Webhooks", () => {
   test("webhooks.verifyAndReceive(event) with incorrect signature", async () => {
     const webhooks = new Webhooks({ secret: "mysecret" });
 
-    const pingPayload = {} as EmitterWebhookEvent<"ping">["payload"];
+    const pingPayload = {} as EmitterWebhookEvent<unknown, "ping">["payload"];
     await expect(async () =>
       webhooks.verifyAndReceive({
         id: "1",

@@ -62,6 +62,59 @@ describe("createNodeMiddleware(webhooks)", () => {
     server.close();
   });
 
+  test("additional data example from url and header", async () => {
+    expect.assertions(4);
+
+    interface TestResponse {
+      h: string;
+      url: string;
+    }
+
+    const webhooks = new Webhooks<unknown, TestResponse>({
+      secret: "mySecret",
+    });
+
+    const server = createServer(
+      createNodeMiddleware(webhooks, {
+        additionalDataExtractor: (r) =>
+          ({
+            h: r.headers["my-custom-header"],
+            url: r.url,
+          } as TestResponse),
+      })
+    ).listen();
+
+    // @ts-expect-error complains about { port } although it's included in returned AddressInfo interface
+    const { port } = server.address();
+
+    webhooks.on("push", (event) => {
+      expect(event.id).toBe("123e4567-e89b-12d3-a456-426655440000");
+      expect(event.additionalData).toStrictEqual({
+        h: "customHeader",
+        url: `/api/github/webhooks/0001/testurl`,
+      });
+    });
+
+    const response = await fetch(
+      `http://localhost:${port}/api/github/webhooks/0001/testurl`,
+      {
+        method: "POST",
+        headers: {
+          "X-GitHub-Delivery": "123e4567-e89b-12d3-a456-426655440000",
+          "X-GitHub-Event": "push",
+          "X-Hub-Signature-256": signatureSha256,
+          "my-custom-header": "customHeader",
+        },
+        body: pushEventPayload,
+      }
+    );
+
+    expect(response.status).toEqual(200);
+    await expect(response.text()).resolves.toBe("ok\n");
+
+    server.close();
+  });
+
   test("request.body already parsed (e.g. Lambda)", async () => {
     expect.assertions(3);
 

@@ -15,23 +15,23 @@ import {
 import { receiverHandle as receive } from "./receive";
 import { removeListener } from "./remove-listener";
 
-interface EventHandler<TTransformed> {
+interface EventHandler<TTransformed, TAdd> {
   on<E extends EmitterWebhookEventName>(
     event: E | E[],
-    callback: HandlerFunction<E, TTransformed>
+    callback: HandlerFunction<E, TTransformed, TAdd>
   ): void;
-  onAny(handler: (event: EmitterWebhookEvent) => any): void;
+  onAny(handler: (event: EmitterWebhookEvent<TAdd>) => any): void;
   onError(handler: (event: WebhookEventHandlerError) => any): void;
   removeListener<E extends EmitterWebhookEventName>(
     event: E | E[],
-    callback: HandlerFunction<E, TTransformed>
+    callback: HandlerFunction<E, TTransformed, TAdd>
   ): void;
-  receive(event: EmitterWebhookEvent): Promise<void>;
+  receive(event: EmitterWebhookEvent<TAdd>): Promise<void>;
 }
 
-export function createEventHandler<TTransformed>(
-  options: Options<TTransformed>
-): EventHandler<TTransformed> {
+export function createEventHandler<TTransformed, TAdd>(
+  options: Options<TTransformed, TAdd>
+): EventHandler<TTransformed, TAdd> {
   const state: State = {
     hooks: {},
     log: createLogger(options && options.log),
@@ -41,9 +41,14 @@ export function createEventHandler<TTransformed>(
     state.transform = options.transform;
   }
 
+  const onAnyTyped: (
+    state: State,
+    handler: (event: EmitterWebhookEvent<TAdd>) => any
+  ) => void = onAny;
+
   return {
     on: on.bind(null, state),
-    onAny: onAny.bind(null, state),
+    onAny: onAnyTyped.bind(null, state),
     onError: onError.bind(null, state),
     removeListener: removeListener.bind(null, state),
     receive: receive.bind(null, state),

@@ -8,12 +8,13 @@ import type { emitterEventNames } from "./generated/webhook-names";
 
 export type EmitterWebhookEventName = typeof emitterEventNames[number];
 export type EmitterWebhookEvent<
+  TAdd = unknown,
   TEmitterEvent extends EmitterWebhookEventName = EmitterWebhookEventName
 > = TEmitterEvent extends `${infer TWebhookEvent}.${infer TAction}`
-  ? BaseWebhookEvent<Extract<TWebhookEvent, WebhookEventName>> & {
+  ? BaseWebhookEvent<TAdd, Extract<TWebhookEvent, WebhookEventName>> & {
       payload: { action: TAction };
     }
-  : BaseWebhookEvent<Extract<TEmitterEvent, WebhookEventName>>;
+  : BaseWebhookEvent<TAdd, Extract<TEmitterEvent, WebhookEventName>>;
 
 export type EmitterWebhookEventWithStringPayloadAndSignature = {
   id: string;
@@ -22,28 +23,33 @@ export type EmitterWebhookEventWithStringPayloadAndSignature = {
   signature: string;
 };
 
-export type EmitterWebhookEventWithSignature = EmitterWebhookEvent & {
-  signature: string;
-};
+export type EmitterWebhookEventWithSignature<TAdd> =
+  EmitterWebhookEvent<TAdd> & {
+    signature: string;
+  };
 
-interface BaseWebhookEvent<TName extends WebhookEventName> {
+interface BaseWebhookEvent<TAdd, TName extends WebhookEventName> {
   id: string;
   name: TName;
   payload: WebhookEventMap[TName];
+  additionalData?: TAdd;
 }
 
-export interface Options<TTransformed = unknown> {
+export interface Options<TTransformed = unknown, TAdd = unknown> {
   secret?: string;
-  transform?: TransformMethod<TTransformed>;
+  transform?: TransformMethod<TTransformed, TAdd>;
   log?: Partial<Logger>;
 }
 
-type TransformMethod<T> = (event: EmitterWebhookEvent) => T | PromiseLike<T>;
+type TransformMethod<T, TAdd> = (
+  event: EmitterWebhookEvent<TAdd>
+) => T | PromiseLike<T>;
 
 export type HandlerFunction<
   TName extends EmitterWebhookEventName,
-  TTransformed
-> = (event: EmitterWebhookEvent<TName> & TTransformed) => any;
+  TTransformed,
+  TAdd
+> = (event: EmitterWebhookEvent<TAdd, TName> & TTransformed) => any;
 
 export type RemoveHandlerFunction<
   TName extends EmitterWebhookEventName | "*",
@@ -54,7 +60,7 @@ type Hooks = {
   [key: string]: Function[];
 };
 
-export interface State extends Options<any> {
+export interface State extends Options<any, any> {
   eventHandler?: any;
   hooks: Hooks;
   log: Logger;

@@ -6,11 +6,12 @@ type ServerResponse = any;
 
 import { Logger } from "../../createLogger";
 
-export type MiddlewareOptions = {
+export type MiddlewareOptions<TAdd> = {
   path?: string;
   log?: Logger;
   onUnhandledRequest?: (
     request: IncomingMessage,
     response: ServerResponse
   ) => void;
+  additionalDataExtractor?: (request: IncomingMessage) => TAdd;
 };
