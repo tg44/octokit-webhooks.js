@@ -13,24 +13,27 @@ export async function verifyAndReceive<TAdd>(
     | EmitterWebhookEventWithStringPayloadAndSignature
     | EmitterWebhookEventWithSignature<TAdd>
 ): Promise<any> {
-  // verify will validate that the secret is not undefined
-  const matchesSignature = await verify(
-    state.secret,
-    typeof event.payload === "object"
-      ? toNormalizedJsonString(event.payload)
-      : event.payload,
-    event.signature
-  );
-
-  if (!matchesSignature) {
-    const error = new Error(
-      "[@octokit/webhooks] signature does not match event payload and secret"
+  if (state.secret) {
+    // verify will validate that the secret is not undefined
+    const matchesSignature = await verify(
+      state.secret,
+      typeof event.payload === "object"
+        ? toNormalizedJsonString(event.payload)
+        : event.payload,
+      event.signature
     );
 
-    return state.eventHandler.receive(
-      Object.assign(error, { event, status: 400 })
-    );
+    if (!matchesSignature) {
+      const error = new Error(
+        "[@octokit/webhooks] signature does not match event payload and secret"
+      );
+
+      return state.eventHandler.receive(
+        Object.assign(error, { event, status: 400 })
+      );
+    }
   }
+
   const additionalData = (event as Record<string, unknown>).additionalData
     ? ((event as Record<string, unknown>).additionalData as TAdd)
     : undefined;

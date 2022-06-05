@@ -44,15 +44,17 @@ class Webhooks<TTransformed = unknown, TAdd = unknown> {
   ) => Promise<void>;
 
   constructor(options: Options<TTransformed, TAdd> & { secret: string }) {
-    if (!options || !options.secret) {
-      throw new Error("[@octokit/webhooks] options.secret required");
+    const logger = createLogger(options.log);
+
+    if (!options.secret) {
+      logger.warn("Secret is not set or empty! Verify will missed out!");
     }
 
     const state: State & { secret: string } = {
       eventHandler: createEventHandler(options),
       secret: options.secret,
       hooks: {},
-      log: createLogger(options.log),
+      log: logger,
     };
 
     this.sign = sign.bind(null, options.secret);

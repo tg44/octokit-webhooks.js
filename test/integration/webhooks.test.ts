@@ -4,6 +4,7 @@ import { sign } from "@octokit/webhooks-methods";
 
 import { Webhooks, EmitterWebhookEvent } from "../../src";
 import { toNormalizedJsonString } from "../../src/to-normalized-json-string";
+import { createLogger } from "../../src/createLogger";
 
 const pushEventPayloadString = readFileSync(
   "test/fixtures/push-payload.json",
@@ -12,9 +13,15 @@ const pushEventPayloadString = readFileSync(
 
 describe("Webhooks", () => {
   test("new Webhooks() without secret option", () => {
+    const partialLogger = {
+      warn: jest.fn(),
+    };
+    const logger = createLogger(partialLogger);
     // @ts-expect-error
-    expect(() => new Webhooks()).toThrow(
-      "[@octokit/webhooks] options.secret required"
+    new Webhooks({ log: logger });
+    expect(partialLogger.warn).toHaveBeenCalledTimes(1);
+    expect(partialLogger.warn).toHaveBeenCalledWith(
+      "Secret is not set or empty! Verify will missed out!"
     );
   });
 
@@ -78,6 +85,18 @@ describe("Webhooks", () => {
         { secret, algorithm: "sha256" },
         pushEventPayloadString
       ),
+    });
+  });
+
+  test("webhooks.verifyAndReceive({ ...event, signature }) without secret", async () => {
+    const secret = "";
+    const webhooks = new Webhooks({ secret });
+
+    await webhooks.verifyAndReceive({
+      id: "1",
+      name: "push",
+      payload: pushEventPayloadString,
+      signature: "bad_signature",
     });
   });
 
