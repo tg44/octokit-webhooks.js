@@ -6,6 +6,9 @@ on:
       - next
       - beta
       - "v*.x" # maintenance release branches, e.g. v1.x
+  workflow_dispatch:
+    branches: [all]
+
 jobs:
   release:
     name: release
