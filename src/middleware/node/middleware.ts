@@ -22,6 +22,7 @@ export const middleware = async <TTransform, TAdd>(
   let pathname: string;
   try {
     pathname = new URL(request.url as string, "http://localhost").pathname;
+    options.log.debug(`${pathname} on url`);
   } catch (error) {
     response.writeHead(422, {
       "content-type": "application/json",
@@ -31,6 +32,7 @@ export const middleware = async <TTransform, TAdd>(
         error: `Request URL could not be parsed: ${request.url}`,
       })
     );
+    options.log.debug(`path error`);
     return;
   }
 
@@ -38,9 +40,12 @@ export const middleware = async <TTransform, TAdd>(
     request.method !== "POST" || !pathname.startsWith(options.path);
   const isExpressMiddleware = typeof next === "function";
   if (isUnknownRoute) {
+    options.log.debug(`unknown url`);
     if (isExpressMiddleware) {
+      options.log.debug(`unknown url next`);
       return next!();
     } else {
+      options.log.debug(`unknown url unhandled`);
       return options.onUnhandledRequest(request, response);
     }
   }
@@ -48,6 +53,7 @@ export const middleware = async <TTransform, TAdd>(
   const missingHeaders = getMissingHeaders(request).join(", ");
 
   if (missingHeaders) {
+    options.log.debug(`missing header`);
     response.writeHead(400, {
       "content-type": "application/json",
     });
@@ -64,7 +70,7 @@ export const middleware = async <TTransform, TAdd>(
   const signatureSHA256 = request.headers["x-hub-signature-256"] as string;
   const id = request.headers["x-github-delivery"] as string;
 
-  options.log.debug(`${eventName} event received (id: ${id})`);
+  options.log.info(`${eventName} event received (id: ${id})`);
 
   // GitHub will abort the request if it does not receive a response within 10s
   // See https://github.com/octokit/webhooks.js/issues/185
@@ -80,6 +86,8 @@ export const middleware = async <TTransform, TAdd>(
     const additionalData = options.additionalDataExtractor
       ? options.additionalDataExtractor(request)
       : undefined;
+
+    options.log.debug(`${additionalData} found on ${id}`);
 
     await webhooks.verifyAndReceive({
       id: id,
@@ -99,6 +107,7 @@ export const middleware = async <TTransform, TAdd>(
     if (didTimeout) return;
 
     const statusCode = Array.from(error as WebhookEventHandlerError)[0].status;
+    options.log.debug(`${error} error on ${id}`);
     response.statusCode = typeof statusCode !== "undefined" ? statusCode : 500;
     response.end(String(error));
   }
