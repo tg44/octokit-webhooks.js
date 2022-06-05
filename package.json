@@ -1,5 +1,5 @@
 {
-  "name": "@octokit/webhooks",
+  "name": "@tg44/octokit-webhooks.js",
   "version": "0.0.0-development",
   "description": "GitHub webhook events toolset for Node.js",
   "keywords": [],
