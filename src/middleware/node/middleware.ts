@@ -79,7 +79,7 @@ export const middleware = async <TTransform, TAdd>(
     didTimeout = true;
     response.statusCode = 202;
     response.end("still processing\n");
-  }, 9000).unref();
+  }, 9000);
 
   try {
     const payload = await getPayload(request);
@@ -110,5 +110,7 @@ export const middleware = async <TTransform, TAdd>(
     options.log.debug(`${error} error on ${id}`);
     response.statusCode = typeof statusCode !== "undefined" ? statusCode : 500;
     response.end(String(error));
+  } finally {
+    clearTimeout(timeout);
   }
 };
